@@ -91,7 +91,7 @@ def get_event_description(string_info):
 
     sections = string_info.split('\t')
 
-    if len(sections) < EVENT_DESCRIPTION_POSITION:
-        return None
+    if len(sections) < EVENT_DESCRIPTION_POSITION + 1:
+        return ""
 
     return sections[EVENT_DESCRIPTION_POSITION]
