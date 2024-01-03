@@ -41,3 +41,10 @@ def get_committed_story_points(collection):
             break
         
     return committed_story_points
+
+def set_story_point_commitment(collection, story_point_commitment):
+
+    if len(collection) == 0:
+        return
+    
+    collection[0] = f"{collection[0]}, {story_point_commitment}"

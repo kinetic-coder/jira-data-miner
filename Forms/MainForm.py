@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import filedialog
 import Utilities.FileRepository as fu
 import Utilities.DateUtilities as du
+import Utilities.JiraBurndownUtilities as ju
+import Models.BurndownSummaryItem as bsi
 
 from tkcalendar import DateEntry
 
@@ -72,15 +74,30 @@ class Application(tk.Frame):
     def process_file(self):
         filename = self.file_entry.get()
         self.log_area.insert(tk.END, f"Processing file: {filename}\n")
-        # Add your file processing code here
+
+        burndown_info = fu.read_file_lines(filename)
+
+        ju.remove_header_information(burndown_info)
+
+        burndown_summary_info_collection = []
 
         sprintDateRange = du.get_date_range(self.start_date_entry.get_date(), self.end_date_entry.get_date())
         
+        story_points = ju.get_committed_story_points(burndown_info)
+
+        # calculate the daily story point progression.
+        daily_story_point_progression = story_points / len(sprintDateRange)
+
+        story_point_progression = story_points
+
         for sprintDate in sprintDateRange:
-            self.log_area.insert(tk.END, f"{sprintDate}\n")
+            burndown_summary_item = bsi.BurndownSummaryItem(sprintDate, 0, story_point_progression)
+            burndown_summary_info_collection.append(burndown_summary_item)
+            story_point_progression -= daily_story_point_progression
 
-        # sfileContents = fu.read_file_lines(filename)
-        # for line in fileContents:
-        #     self.log_area.insert(tk.END, f"{line}\n")
+        burndown_summary_info_collection[0].story_points = story_points
 
-        self.log_area.insert(tk.END, "Done!\n") 
+        for bi in burndown_summary_info_collection:
+            self.log_area.insert(tk.END, f"{bi.to_string()}\n")
+
+        self.log_area.insert(tk.END, "Done!\n")
