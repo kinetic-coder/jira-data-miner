@@ -97,6 +97,8 @@ class Application(tk.Frame):
 
         burndown_summary_info_collection[0].story_points = story_points
 
+        collated_burndown_data = ju.get_story_points_sprint_progression(sprintDateRange, burndown_info)
+
         for bi in burndown_summary_info_collection:
             self.log_area.insert(tk.END, f"{bi.to_string()}\n")
 

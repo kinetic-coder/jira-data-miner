@@ -1,8 +1,14 @@
 import re
 import Utilities.JiraBurndownUtilities as jbu
+import Models.BurndownSummaryItemDTO as models
 import Utilities.DateUtilities as du
 
 EVENT_DESCRIPTION_POSITION = 3
+
+LINE_TYPE_NONE = 0
+LINE_TYPE_BURNDOWN_CHANGE = 1
+LINE_TYPE_STORY_POINT = 2
+LINE_TYPE_STORY_POINT_RUNNING_TOTAL = 3
 
 def remove_strings_by_index(collection, first_index_to_remove, last_index_to_remove):
 
@@ -56,28 +62,36 @@ def set_story_point_commitment(collection, story_point_commitment):
 # todo: update method to save the story points to the burndown_summary_data_collection
 def get_story_points_sprint_progression(sprintDatesCollection, jiraBurndownInfo):
 
-    dated_instruction_identified = False
+    line_type = LINE_TYPE_NONE #1 = date line, 2 = story points, 3 = summary total.
+
     burndown_summary_data_collection = []
 
     for jiraBurndownLine in jiraBurndownInfo:
 
         if du.string_contains_date(jiraBurndownLine):
         
-            bsi = jbu.BurndownSummaryItemDTO(du.get_date_from_string(jiraBurndownLine), get_event_description(jiraBurndownLine))
-            dated_instruction_identified = True
+            bsi = models.BurndownSummaryItemDTO(du.get_date_from_string(jiraBurndownLine), get_event_description(jiraBurndownLine))
+
+            line_type = LINE_TYPE_BURNDOWN_CHANGE
 
         else:
                 
-            if dated_instruction_identified:
+            if line_type == LINE_TYPE_BURNDOWN_CHANGE:
                 bsi.story_points = get_committed_story_points(jiraBurndownLine)
-                dated_instruction_identified = False
+                line_type = LINE_TYPE_STORY_POINT
+
+            elif line_type == LINE_TYPE_STORY_POINT:
+                bsi.running_total = get_committed_story_points(jiraBurndownLine)
                 burndown_summary_data_collection.append(bsi)
+                line_type = LINE_TYPE_NONE
+                
+    return burndown_summary_data_collection
 
 def get_event_description(string_info):
 
     sections = string_info.split('\t')
 
-    if len(sections) < EVENT_DESCRIPTION_POSITION
+    if len(sections) < EVENT_DESCRIPTION_POSITION:
         return None
 
     return sections[EVENT_DESCRIPTION_POSITION]

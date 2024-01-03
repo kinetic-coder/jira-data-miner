@@ -1,6 +1,7 @@
 class BurndownSummaryItemDTO:
     
     story_points = 0
+    running_total = 0
 
     def __init__(self, datetime, event_description):
         self.datetime = datetime
