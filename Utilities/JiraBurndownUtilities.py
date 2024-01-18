@@ -10,6 +10,11 @@ LINE_TYPE_BURNDOWN_CHANGE = 1
 LINE_TYPE_STORY_POINT = 2
 LINE_TYPE_STORY_POINT_RUNNING_TOTAL = 3
 
+def contains_jira_reference(text):
+    pattern = r'SBS-\d+'
+    match = re.search(pattern, text)
+    return match.group(0) if match else None
+
 def remove_strings_by_index(collection, first_index_to_remove, last_index_to_remove):
 
     if first_index_to_remove < 0 or last_index_to_remove > len(collection) - 1:
@@ -20,10 +25,15 @@ def remove_strings_by_index(collection, first_index_to_remove, last_index_to_rem
 def remove_header_information(jira_burndown_list, string_indicator_for_useful_data = "Sprint started by"):
 
     startingIndexForBurndownData = 0
+    foundFirstBurndownRecord = False
 
     for i in range(len(jira_burndown_list)):
         if jira_burndown_list[i].startswith(string_indicator_for_useful_data):
             startingIndexForBurndownData = i + 1 # would like to remove "Sprint started by" as well
+            foundFirstBurndownRecord = True
+
+        elif foundFirstBurndownRecord == True and du.string_contains_date(jira_burndown_list[i]):
+            startingIndexForBurndownData = i
             break
     
     remove_strings_by_index(jira_burndown_list, 0, startingIndexForBurndownData - 1)
@@ -60,7 +70,7 @@ def set_story_point_commitment(collection, story_point_commitment):
     collection[0] = f"{collection[0]}, {story_point_commitment}"
 
 # todo: update method to save the story points to the burndown_summary_data_collection
-def get_story_points_sprint_progression(sprintDatesCollection, jiraBurndownInfo):
+def get_burndown_data_from_file(sprintDatesCollection, jiraBurndownInfo):
 
     line_type = LINE_TYPE_NONE #1 = date line, 2 = story points, 3 = summary total.
 
@@ -74,6 +84,10 @@ def get_story_points_sprint_progression(sprintDatesCollection, jiraBurndownInfo)
 
             line_type = LINE_TYPE_BURNDOWN_CHANGE
 
+        elif contains_jira_reference(jiraBurndownLine):
+            bsi = models.BurndownSummaryItemDTO('', get_event_description(jiraBurndownLine))
+            line_type = LINE_TYPE_BURNDOWN_CHANGE
+
         else:
                 
             if line_type == LINE_TYPE_BURNDOWN_CHANGE:
@@ -84,6 +98,8 @@ def get_story_points_sprint_progression(sprintDatesCollection, jiraBurndownInfo)
                 bsi.running_total = get_committed_story_points(jiraBurndownLine)
                 burndown_summary_data_collection.append(bsi)
                 line_type = LINE_TYPE_NONE
+        
+        
                 
     return burndown_summary_data_collection
 
